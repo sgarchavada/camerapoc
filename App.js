@@ -13,26 +13,50 @@ import {
   View, Image, Dimensions, TouchableOpacity
 } from 'react-native';
 import { RNCamera } from 'react-native-camera';
+import ImageEditor from '@react-native-community/image-editor';
+
 import ImageViewers from './ImageViewer';
 
 const { height, width } = Dimensions.get('screen');
 
+
 class App extends Component {
+
+  componentDidMount = () => {
+    this.setState({ RESIZED_HEIGHT: height - (height / 1.68)});
+  }
 
   state = {
     captureData: [],
     visible: false,
-    previewData: ''
+    previewData: '',
+    RESIZED_WIDTH: 70,
+    RESIZED_HEIGHT: 0
   }
 
   takePicture = async () => {
+    const { RESIZED_HEIGHT, RESIZED_WIDTH } = this.state;
     if (this.camera) {
       const options = { quality: 0.5, base64: true };
       const data = await this.camera.takePictureAsync(options);
       console.log(data.uri);
-      const arrayData = this.state.captureData;
-      arrayData.unshift(data.uri);
-      this.setState({ captureData: arrayData });
+      const { uri, width, height } = data;
+      const cropData = {
+        offset: { x: 0, y: 0 },
+        size: { width: 60, height: RESIZED_HEIGHT },
+        resizeMode: 'contain'
+      };
+
+      ImageEditor.cropImage(uri, cropData, (resizedImage) => {
+        // resizedImage == 'file:///data/.../img.jpg'
+        const arrayData = this.state.captureData;
+        console.log(resizedImage);
+        arrayData.unshift(resizedImage);
+        this.setState({ captureData: arrayData });
+      }, (error) => {
+        console.error('Error resizing image: ', error.getMessage());
+      });
+
     }
   }
 
